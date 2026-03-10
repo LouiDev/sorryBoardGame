@@ -12,6 +12,7 @@ import tree.Node;
 import tree.TeamRootNode;
 
 import javax.swing.JPanel;
+import javax.swing.Timer;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -44,10 +45,23 @@ public class BoardPanel extends JPanel {
     private static final int FIELDS_PER_SIDE = 10;
 
     private final Board board;
+    private float highlightPhase = 0f;
 
     public BoardPanel(Board board) {
         this.board = board;
         setBackground(new Color(245, 240, 220));
+
+        // Timer für pulsierende Highlight-Animation (~60 fps)
+        Timer animTimer = new Timer(16, e -> {
+            if (board.state() == GameState.WAITING_FOR_FIGURE_SELECTION) {
+                highlightPhase += 0.05f;
+                if (highlightPhase > 2 * Math.PI) highlightPhase -= (float) (2 * Math.PI);
+            } else {
+                highlightPhase = 0f;
+            }
+            repaint();
+        });
+        animTimer.start();
     }
 
     @Override
@@ -136,7 +150,7 @@ public class BoardPanel extends JPanel {
         }
 
         // Heimfelder (home-Figuren) in den Ecken zeichnen
-        drawAllHomes(g2, teams, n, cornerX, cornerY, cx, cy, polygonRadius, startAngle);
+        drawAllHomes(g2, teams, n, cornerX, cornerY, cx, cy, polygonRadius, startAngle, selected);
 
         // Zentrales Info-Panel im Mittelpunkt des Spielfelds
         drawCenterInfo(g2, cx, cy);
@@ -229,7 +243,8 @@ public class BoardPanel extends JPanel {
 
     private void drawAllHomes(Graphics2D g2, Team[] teams, int n,
                               double[] cornerX, double[] cornerY,
-                              int cx, int cy, int polygonRadius, double startAngle) {
+                              int cx, int cy, int polygonRadius, double startAngle,
+                              GameFigure selected) {
         for (int i = 0; i < n; i++) {
             Team team = teams[i];
             Color c = team.color();
@@ -263,6 +278,9 @@ public class BoardPanel extends JPanel {
                 // Figur nur zeichnen wenn sie noch im Heim ist
                 if (home[j] != null) {
                     Renderer.drawFigure(g2, hx, hy, FIGURE_RADIUS, c);
+                    if (home[j] == selected) {
+                        drawHighlight(g2, hx, hy);
+                    }
                 }
             }
         }
@@ -286,37 +304,46 @@ public class BoardPanel extends JPanel {
         int roll = board.lastRoll();
         Color teamColor = team.color();
 
-        // Hintergrund-Ellipse im Zentrum
-        int bgW = 200;
-        int bgH = 130;
-        g2.setColor(new Color(255, 255, 255, 200));
-        g2.fillRoundRect(cx - bgW / 2, cy - bgH / 2, bgW, bgH, 20, 20);
-        g2.setColor(teamColor.darker());
-        g2.setStroke(new BasicStroke(2.5f));
-        g2.drawRoundRect(cx - bgW / 2, cy - bgH / 2, bgW, bgH, 20, 20);
+        // Zeile 1: "Team " + <farbname> + " ist am Zug!" — zusammen zentriert
+        Font prefixFont = new Font("SansSerif", Font.BOLD, 14);
+        Font nameFont = new Font("SansSerif", Font.BOLD, 18);
 
-        // Team-Farbindikator (kleiner Kreis links)
-        int dotR = 8;
+        g2.setFont(prefixFont);
+        FontMetrics fmPrefix = g2.getFontMetrics();
+        String prefix = "Team ";
+        String suffix = " ist am Zug!";
+        int prefixW = fmPrefix.stringWidth(prefix);
+        int suffixW = fmPrefix.stringWidth(suffix);
+
+        g2.setFont(nameFont);
+        FontMetrics fmName = g2.getFontMetrics();
+        String colorName = team.name();
+        int nameW = fmName.stringWidth(colorName);
+
+        int totalW = prefixW + nameW + suffixW;
+        int startX = cx - totalW / 2;
+        int line1Y = cy - 30;
+
+        g2.setFont(prefixFont);
+        g2.setColor(new Color(60, 60, 60));
+        g2.drawString(prefix, startX, line1Y);
+
+        g2.setFont(nameFont);
         g2.setColor(teamColor);
-        g2.fillOval(cx - bgW / 2 + 14, cy - dotR, dotR * 2, dotR * 2);
-        g2.setColor(teamColor.darker());
-        g2.setStroke(new BasicStroke(1.5f));
-        g2.drawOval(cx - bgW / 2 + 14, cy - dotR, dotR * 2, dotR * 2);
+        g2.drawString(colorName, startX + prefixW, line1Y);
 
-        // Team-Bezeichnung
-        g2.setFont(new Font("SansSerif", Font.BOLD, 13));
-        g2.setColor(teamColor.darker());
-        String teamLabel = "Team " + (team.id() + 1);
-        drawCentered(g2, teamLabel, cx + dotR, cy - 28);
+        g2.setFont(prefixFont);
+        g2.setColor(new Color(60, 60, 60));
+        g2.drawString(suffix, startX + prefixW + nameW, line1Y);
 
-        // Gewürfelte Zahl — groß, zentriert
+        // Zeile 2: Augenzahl — groß, in Teamfarbe, zentriert
         if (roll > 0) {
             g2.setFont(new Font("SansSerif", Font.BOLD, 42));
-            g2.setColor(teamColor.darker());
-            drawCentered(g2, String.valueOf(roll), cx, cy + 8);
+            g2.setColor(teamColor);
+            drawCentered(g2, String.valueOf(roll), cx, cy + 18);
         }
 
-        // Anweisung je nach State
+        // Zeile 3: Hinweis je nach State — grau, klein, zentriert
         g2.setFont(new Font("SansSerif", Font.PLAIN, 11));
         g2.setColor(new Color(80, 80, 80));
         String hint;
@@ -327,7 +354,7 @@ public class BoardPanel extends JPanel {
         } else {
             hint = "← → Wählen   SPACE: OK";
         }
-        drawCentered(g2, hint, cx, cy + 50);
+        drawCentered(g2, hint, cx, cy + 60);
     }
 
     /** Zeichnet einen String horizontal zentriert um den Punkt (cx, baselineY). */
@@ -342,9 +369,18 @@ public class BoardPanel extends JPanel {
     // -------------------------------------------------------------------------
 
     private void drawHighlight(Graphics2D g2, int px, int py) {
-        int r = FIGURE_RADIUS + HIGHLIGHT_EXTRA;
-        g2.setColor(Color.WHITE);
-        g2.setStroke(new BasicStroke(3f));
+        float pulse = (float) Math.sin(highlightPhase);   // -1 .. 1
+        int r = FIGURE_RADIUS + HIGHLIGHT_EXTRA + (int) (pulse * 3);
+        int alpha = 180 + (int) (pulse * 60);             // 120 .. 240
+
+        // Schatten-Ring (dunkel, außen)
+        g2.setColor(new Color(0, 0, 0, Math.max(0, Math.min(255, alpha / 2))));
+        g2.setStroke(new BasicStroke(5f));
+        g2.drawOval(px - r - 2, py - r - 2, (r + 2) * 2, (r + 2) * 2);
+
+        // Weiß-Ring (innen)
+        g2.setColor(new Color(255, 255, 255, Math.max(0, Math.min(255, alpha))));
+        g2.setStroke(new BasicStroke(2.5f));
         g2.drawOval(px - r, py - r, r * 2, r * 2);
     }
 

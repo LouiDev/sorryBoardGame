@@ -7,10 +7,10 @@ import java.awt.*;
 
 void main() {
     Board board = new BoardBuilder()
-            .addTeam(Color.RED)
-            .addTeam(Color.YELLOW)
-            .addTeam(Color.BLUE)
-            .addTeam(Color.GREEN)
+            .addTeam(Color.RED, "Rot")
+            .addTeam(Color.YELLOW, "Gelb")
+            .addTeam(Color.BLUE, "Blau")
+            .addTeam(Color.GREEN, "Grün")
             .build();
     board.startGame();
 

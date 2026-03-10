@@ -71,7 +71,7 @@ Actual violation:  tree → models  (Node.java imports GameFigure)
 |------------------------------------------------|------------------------|
 | Circular linked list (all node types)          | Done                   |
 | `BoardBuilder` fluent API                      | Done                   |
-| `Team` model (id, color, home figures)         | Done                   |
+| `Team` model (id, color, name, home figures)   | Done — `name` field + accessor added |
 | `GameFigure` model                             | Done — `team()` accessor added |
 | `GameState` enum                               | Done (new file)        |
 | `Board.startGame()`                            | Done                   |
@@ -87,7 +87,8 @@ Actual violation:  tree → models  (Node.java imports GameFigure)
 | Home-area rendering                            | Done — null guard added |
 | Figure rendering with team color on board      | Done                   |
 | Highlight-Ring für ausgewählte Figur           | Done                   |
-| Center info panel (Würfelzahl + Hinweistext)   | Done                   |
+| Center info panel (minimalist: Teamname in Farbe + Würfelzahl + Hinweis) | Done — box removed, name in team color |
+| Pulsierender Highlight-Ring für ausgewählte Figur (Brett + Home)         | Done — Swing-Timer, Doppelring (Schatten + Weiß), animiert |
 | Repaint after `board.update()`                 | Done                   |
 | Keyboard input (SPACE + ←/→)                   | Done                   |
 | `createBoard()` duplicate TeamRootNode fix     | Done                   |
@@ -153,3 +154,5 @@ Actual violation:  tree → models  (Node.java imports GameFigure)
 | 2026-03-10 | Reset `lastRoll` to 0 in `endTurn()` and after placing home figure, so dice display clears between turns | agent   |
 | 2026-03-10 | Add `WAITING_FOR_SKIP_CONFIRM` state so skipped turns show the rolled number until player presses SPACE | agent   |
 | 2026-03-10 | Remove premature `lastRoll = 0` after home-figure placement so the rolled 6 stays visible | agent   |
+| 2026-03-10 | Minimalist center info: remove box, add readable team color name (Team Rot/Gelb/Blau/Grün) in team color; add `name` field to `Team` and `BoardBuilder` | agent   |
+| 2026-03-10 | Animated pulsing highlight ring: Swing-Timer at 60fps, double-ring (dark shadow + white), now also covers home figures in `drawAllHomes` | agent   |

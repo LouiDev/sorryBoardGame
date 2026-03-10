@@ -11,8 +11,8 @@ public class BoardBuilder {
         teams = new ArrayList<>();
     }
 
-    public BoardBuilder addTeam(Color color) {
-        teams.add(new Team(teams.size() + 1, color));
+    public BoardBuilder addTeam(Color color, String name) {
+        teams.add(new Team(teams.size() + 1, color, name));
         return this;
     }
 

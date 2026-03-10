@@ -9,13 +9,15 @@ import java.util.Objects;
 public class Team {
     private final int id;
     private final Color color;
+    private final String name;
     private final GameFigure[] home;
 
     private TeamRootNode rootNode;
 
-    public Team(int id, Color color) {
+    public Team(int id, Color color, String name) {
         this.id = id;
         this.color = color;
+        this.name = name;
 
         home = createHome();
     }
@@ -34,6 +36,10 @@ public class Team {
 
     public Color color() {
         return color;
+    }
+
+    public String name() {
+        return name;
     }
 
     public GameFigure[] home() {
