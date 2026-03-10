@@ -2,6 +2,7 @@ package ui;
 
 import models.Board;
 import models.GameFigure;
+import models.GameState;
 import models.Team;
 import tree.ContentNode;
 import tree.EndNode;
@@ -11,12 +12,13 @@ import tree.Node;
 import tree.TeamRootNode;
 
 import javax.swing.JPanel;
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Zeichnet das Mensch-ärgere-dich-nicht-Spielfeld.
@@ -32,6 +34,7 @@ public class BoardPanel extends JPanel {
     private static final int FIELD_RADIUS = 18;
     private static final int FIGURE_RADIUS = 8;
     private static final int HOME_FIELD_RADIUS = 16;
+    private static final int HIGHLIGHT_EXTRA = 6;
 
     // Anzahl Felder zwischen zwei TeamRootNodes (exkl. des nächsten TeamRootNode selbst):
     //   8 ContentNodes + 1 GarageRootNode = 9 Zwischenfelder, der nächste TeamRootNode ist Ecke
@@ -100,6 +103,8 @@ public class BoardPanel extends JPanel {
         int maxNodes = n * (FIELDS_PER_SIDE + 1) + 10;
         int iterations = 0;
 
+        GameFigure selected = board.selectedFigure();
+
         while (!(current instanceof EndNode) && iterations < maxNodes) {
             int nextTeamIndex = (teamIndex + 1) % n;
 
@@ -108,16 +113,16 @@ public class BoardPanel extends JPanel {
             int py = (int) Math.round(cornerY[teamIndex] + t * (cornerY[nextTeamIndex] - cornerY[teamIndex]));
 
             if (current instanceof GarageRootNode grn) {
-                drawGarageRoot(g2, px, py, grn, cx, cy, cornerX, cornerY, teamIndex, n);
+                drawGarageRoot(g2, px, py, grn, cx, cy, cornerX, cornerY, teamIndex, n, selected);
                 teamIndex = nextTeamIndex;
                 fieldIndex = 0;
                 current = current.next();
             } else if (current instanceof TeamRootNode trn) {
-                drawTeamRoot(g2, px, py, trn);
+                drawTeamRoot(g2, px, py, trn, selected);
                 fieldIndex = 1;
                 current = current.next();
             } else if (current instanceof ContentNode cn) {
-                drawContent(g2, px, py, cn);
+                drawContent(g2, px, py, cn, selected);
                 fieldIndex++;
                 current = current.next();
             } else {
@@ -132,36 +137,56 @@ public class BoardPanel extends JPanel {
 
         // Heimfelder (home-Figuren) in den Ecken zeichnen
         drawAllHomes(g2, teams, n, cornerX, cornerY, cx, cy, polygonRadius, startAngle);
+
+        // Zentrales Info-Panel im Mittelpunkt des Spielfelds
+        drawCenterInfo(g2, cx, cy);
     }
 
     // -------------------------------------------------------------------------
     // Feld-Zeichenmethoden
     // -------------------------------------------------------------------------
 
-    private void drawTeamRoot(Graphics2D g2, int px, int py, TeamRootNode trn) {
+    private void drawTeamRoot(Graphics2D g2, int px, int py, TeamRootNode trn, GameFigure selected) {
         Color c = trn.team().color();
         Renderer.drawField(g2, px, py, FIELD_RADIUS, c, c.darker(), 2.5f);
+
+        GameFigure fig = trn.content();
+        if (fig != null) {
+            Renderer.drawFigure(g2, px, py, FIGURE_RADIUS, fig.team().color());
+            if (fig == selected) {
+                drawHighlight(g2, px, py);
+            }
+        }
     }
 
-    private void drawContent(Graphics2D g2, int px, int py, ContentNode cn) {
+    private void drawContent(Graphics2D g2, int px, int py, ContentNode cn, GameFigure selected) {
         Color fill = new Color(235, 235, 235);
         Renderer.drawField(g2, px, py, FIELD_RADIUS, fill, Color.GRAY, 1.5f);
 
         GameFigure fig = cn.content();
         if (fig != null) {
-            // Figur wird in der Mitte des Feldes gezeichnet — Team-Farbe via GameFigure nicht
-            // direkt zugänglich, daher über das Feld-Padding angedeutet (weißer Punkt)
-            Renderer.drawFigure(g2, px, py, FIGURE_RADIUS, Color.DARK_GRAY);
+            Renderer.drawFigure(g2, px, py, FIGURE_RADIUS, fig.team().color());
+            if (fig == selected) {
+                drawHighlight(g2, px, py);
+            }
         }
     }
 
     private void drawGarageRoot(Graphics2D g2, int px, int py, GarageRootNode grn,
                                 int cx, int cy,
                                 double[] cornerX, double[] cornerY,
-                                int teamIndex, int n) {
+                                int teamIndex, int n, GameFigure selected) {
         Color c = grn.team().color();
         // GarageRootNode selbst: größeres Feld mit Teamfarbe, gestrichelter Rahmen
         Renderer.drawField(g2, px, py, FIELD_RADIUS, Renderer.fieldFill(c, 180), c.darker(), 2f);
+
+        GameFigure fig = grn.content();
+        if (fig != null) {
+            Renderer.drawFigure(g2, px, py, FIGURE_RADIUS, fig.team().color());
+            if (fig == selected) {
+                drawHighlight(g2, px, py);
+            }
+        }
 
         // Die 4 Zielfelder (GarageNodes) senkrecht zur Kante nach innen zeichnen
         GarageNode[] garageNodes = grn.garage();
@@ -190,6 +215,11 @@ public class BoardPanel extends JPanel {
             int gy = (int) Math.round(py + perpY * spacing * (i + 1));
             Renderer.drawField(g2, gx, gy, HOME_FIELD_RADIUS,
                     Renderer.fieldFill(c, 220), c.darker(), 1.5f);
+
+            GameFigure garageFig = garageNodes[i].content();
+            if (garageFig != null) {
+                Renderer.drawFigure(g2, gx, gy, FIGURE_RADIUS, garageFig.team().color());
+            }
         }
     }
 
@@ -230,10 +260,90 @@ public class BoardPanel extends JPanel {
                 int hy = (int) Math.round(homeCy + offsets[j][1] * spacing);
                 Renderer.drawField(g2, hx, hy, HOME_FIELD_RADIUS,
                         Renderer.fieldFill(c, 200), c.darker(), 1.5f);
-                // Figur im Heimfeld zeichnen
-                Renderer.drawFigure(g2, hx, hy, FIGURE_RADIUS, c);
+                // Figur nur zeichnen wenn sie noch im Heim ist
+                if (home[j] != null) {
+                    Renderer.drawFigure(g2, hx, hy, FIGURE_RADIUS, c);
+                }
             }
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Zentrale Info-Anzeige
+    // -------------------------------------------------------------------------
+
+    /**
+     * Zeichnet im Zentrum des Spielfelds:
+     *  - Name/Farbe des aktiven Teams
+     *  - Gewürfelte Zahl (falls bereits gewürfelt)
+     *  - Anweisung je nach State
+     */
+    private void drawCenterInfo(Graphics2D g2, int cx, int cy) {
+        Team team = board.currentTeam();
+        if (team == null) return;
+
+        GameState state = board.state();
+        int roll = board.lastRoll();
+        Color teamColor = team.color();
+
+        // Hintergrund-Ellipse im Zentrum
+        int bgW = 200;
+        int bgH = 130;
+        g2.setColor(new Color(255, 255, 255, 200));
+        g2.fillRoundRect(cx - bgW / 2, cy - bgH / 2, bgW, bgH, 20, 20);
+        g2.setColor(teamColor.darker());
+        g2.setStroke(new BasicStroke(2.5f));
+        g2.drawRoundRect(cx - bgW / 2, cy - bgH / 2, bgW, bgH, 20, 20);
+
+        // Team-Farbindikator (kleiner Kreis links)
+        int dotR = 8;
+        g2.setColor(teamColor);
+        g2.fillOval(cx - bgW / 2 + 14, cy - dotR, dotR * 2, dotR * 2);
+        g2.setColor(teamColor.darker());
+        g2.setStroke(new BasicStroke(1.5f));
+        g2.drawOval(cx - bgW / 2 + 14, cy - dotR, dotR * 2, dotR * 2);
+
+        // Team-Bezeichnung
+        g2.setFont(new Font("SansSerif", Font.BOLD, 13));
+        g2.setColor(teamColor.darker());
+        String teamLabel = "Team " + (team.id() + 1);
+        drawCentered(g2, teamLabel, cx + dotR, cy - 28);
+
+        // Gewürfelte Zahl — groß, zentriert
+        if (roll > 0) {
+            g2.setFont(new Font("SansSerif", Font.BOLD, 42));
+            g2.setColor(teamColor.darker());
+            drawCentered(g2, String.valueOf(roll), cx, cy + 8);
+        }
+
+        // Anweisung je nach State
+        g2.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        g2.setColor(new Color(80, 80, 80));
+        String hint;
+        if (state == GameState.WAITING_FOR_ROLL) {
+            hint = "SPACE: Würfeln";
+        } else {
+            hint = "← → Wählen   SPACE: OK";
+        }
+        drawCentered(g2, hint, cx, cy + 50);
+    }
+
+    /** Zeichnet einen String horizontal zentriert um den Punkt (cx, baselineY). */
+    private void drawCentered(Graphics2D g2, String text, int cx, int baselineY) {
+        FontMetrics fm = g2.getFontMetrics();
+        int textW = fm.stringWidth(text);
+        g2.drawString(text, cx - textW / 2, baselineY);
+    }
+
+    // -------------------------------------------------------------------------
+    // Highlight-Ring für ausgewählte Figur
+    // -------------------------------------------------------------------------
+
+    private void drawHighlight(Graphics2D g2, int px, int py) {
+        int r = FIGURE_RADIUS + HIGHLIGHT_EXTRA;
+        g2.setColor(Color.WHITE);
+        g2.setStroke(new BasicStroke(3f));
+        g2.drawOval(px - r, py - r, r * 2, r * 2);
     }
 
     // -------------------------------------------------------------------------

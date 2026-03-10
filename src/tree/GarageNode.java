@@ -9,10 +9,10 @@ public class GarageNode extends TeamNode {
     }
 
     public void getAllRec(GarageNode[] arr, int index) {
+        arr[index] = this;
+
         if (next instanceof EndNode)
             return;
-
-        arr[index] = this;
 
         if (!(next instanceof GarageNode garageNode))
             throw new InvalidTreeStructureException("Es wurde ein GarageNode erwartet aber nicht gefunden.");

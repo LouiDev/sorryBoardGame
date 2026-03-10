@@ -13,7 +13,7 @@ public class BoardFrame extends JFrame {
 
         BoardPanel panel = new BoardPanel(board);
         add(panel);
-        addKeyListener(new InputListener(board));
+        addKeyListener(new InputListener(board, panel));
 
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         pack();

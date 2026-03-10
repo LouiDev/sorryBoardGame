@@ -6,4 +6,8 @@ public class GameFigure {
     public GameFigure(Team team) {
         this.team = team;
     }
+
+    public Team team() {
+        return team;
+    }
 }
