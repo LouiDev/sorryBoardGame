@@ -3,6 +3,8 @@ package models;
 import tree.TeamRootNode;
 
 import java.awt.*;
+import java.util.Arrays;
+import java.util.Objects;
 
 public class Team {
     private final int id;
@@ -16,6 +18,10 @@ public class Team {
         this.color = color;
 
         home = createHome();
+    }
+
+    public boolean isHomeFull() {
+        return Arrays.stream(home).allMatch(Objects::nonNull);
     }
 
     public int id() {
@@ -45,5 +51,9 @@ public class Team {
 
     public void teamRootNode(TeamRootNode node) {
         rootNode = node;
+    }
+
+    public TeamRootNode teamRootNode() {
+        return rootNode;
     }
 }

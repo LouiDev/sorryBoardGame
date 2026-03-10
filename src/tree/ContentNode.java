@@ -10,6 +10,13 @@ public class ContentNode extends Node {
         content = null;
     }
 
+    @Override
+    public Node getNodeForGameFigure(GameFigure figure) {
+        if (content == figure)
+            return this;
+        return next.getNodeForGameFigure(figure);
+    }
+
     public GameFigure content() {
         return content;
     }

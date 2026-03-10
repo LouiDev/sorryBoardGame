@@ -236,3 +236,29 @@ The `tree` and `exceptions` packages must not import from `models` or `ui`.
 - Branch: `master`
 - Commit messages: imperative mood, concise (e.g. `Fix StackOverflow in EndNode constructor`)
 - Do not commit the `out/` directory (already in `.gitignore`)
+
+---
+
+## Memory File
+
+`memory.md` in the repository root is the living project-state document.
+
+**After every successful change to the codebase, update `memory.md`:**
+
+1. **Change Log** — append a new row to the Change Log table at the bottom:
+   `| <date> | <what changed and why (one sentence)> | agent |`
+
+2. **Implementation Status** — update the status of any feature rows that were
+   affected (e.g. change "Empty stub" → "Done", or add a new row).
+
+3. **Critical Bugs** — remove any bug entries that were fixed; add new bugs
+   discovered during the change.
+
+4. **Model Gaps / Missing Logic** — remove resolved items; add newly found gaps.
+
+5. **Next Steps** — re-prioritise or remove completed items; add follow-up tasks
+   that became apparent while working.
+
+The goal is that `memory.md` always reflects the *actual* current state of the
+project, so any agent (or human) reading it gets an accurate picture without
+having to re-analyse the full codebase.

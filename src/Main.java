@@ -12,6 +12,7 @@ void main() {
             .addTeam(Color.BLUE)
             .addTeam(Color.GREEN)
             .build();
+    board.startGame();
 
     SwingUtilities.invokeLater(() -> new BoardFrame(board).setVisible(true));
 }

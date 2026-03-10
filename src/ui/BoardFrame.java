@@ -1,5 +1,6 @@
 package ui;
 
+import listener.InputListener;
 import models.Board;
 
 import javax.swing.JFrame;
@@ -12,6 +13,7 @@ public class BoardFrame extends JFrame {
 
         BoardPanel panel = new BoardPanel(board);
         add(panel);
+        addKeyListener(new InputListener(board));
 
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         pack();
