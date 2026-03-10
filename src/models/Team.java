@@ -18,6 +18,22 @@ public class Team {
         home = createHome();
     }
 
+    public int id() {
+        return id;
+    }
+
+    public Color color() {
+        return color;
+    }
+
+    public GameFigure[] home() {
+        return home;
+    }
+
+    public TeamRootNode rootNode() {
+        return rootNode;
+    }
+
     private GameFigure[] createHome() {
         return new GameFigure[] {
                 new GameFigure(this),

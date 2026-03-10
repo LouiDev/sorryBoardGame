@@ -14,6 +14,13 @@ public class Board {
         root = createBoard();
     }
 
+    public Node root() {
+        return root;
+    }
+    public Team[] teams() {
+        return teams;
+    }
+
     private Node createBoard() {
         TeamRootNode n = new TeamRootNode(teams[0]);
         Node prev = n;
