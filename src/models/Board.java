@@ -45,6 +45,8 @@ public class Board {
             handleRoll(team);
         } else if (state == GameState.WAITING_FOR_FIGURE_SELECTION) {
             confirmSelection();
+        } else if (state == GameState.WAITING_FOR_SKIP_CONFIRM) {
+            endTurn();
         }
     }
 
@@ -62,20 +64,22 @@ public class Board {
     private void handleRoll(Team team) {
         lastRoll = rollDice();
 
+        // Alle Figuren noch im Häuschen
         if (team.isHomeFull()) {
-            // Alle Figuren noch im Häuschen
             if (lastRoll != 6) {
-                endTurn();
+                state = GameState.WAITING_FOR_SKIP_CONFIRM;
                 return;
             }
 
-            // 6 gewürfelt: erste Heimfigur auf das Startfeld setzen
+            // 6 gewürfelt: erste Figur auf das Startfeld setzen
             placeFirstHomeOnStart(team);
             return;
         }
 
         // Wählbare Figuren ermitteln
-        List<GameFigure> onBoard = figuresOnBoard(team);
+        boolean includeHome = lastRoll == 6 && team.teamRootNode().content() == null;
+
+        List<GameFigure> onBoard = figuresOnBoard(team, includeHome);
         if (onBoard.isEmpty()) {
             endTurn();
             return;
@@ -92,8 +96,17 @@ public class Board {
             endTurn();
             return;
         }
+
         GameFigure figure = selectableFigures.get(selectionIndex);
-        moveFigure(figure, lastRoll);
+        Team team = currentTeam();
+
+        if (team.isGameFigurInHome(figure)) {
+            // Neu aufs Feld setzen
+            team.teamRootNode().content(figure);
+        } else {
+            moveFigure(figure, lastRoll);
+        }
+
         selectableFigures = new ArrayList<>();
         selectionIndex = 0;
         state = GameState.WAITING_FOR_ROLL;
@@ -145,37 +158,31 @@ public class Board {
         return new EndNode();
     }
 
-    private List<GameFigure> figuresOnBoard(Team team) {
+    private List<GameFigure> figuresOnBoard(Team team, boolean includeHome) {
         List<GameFigure> result = new ArrayList<>();
-        Node current = root;
-        int maxNodes = teams.length * 11 + 10;
-        for (int i = 0; i < maxNodes; i++) {
-            if (current instanceof ContentNode cn) {
-                GameFigure fig = cn.content();
-                if (fig != null && fig.team() == team) {
-                    result.add(fig);
-                }
+        Node n = root.next();
+        n.collectAllGameFiguresFromTeam(team, root, result);
+
+        if (includeHome) {
+            for (GameFigure figure : team.home()) {
+                if (figure == null)
+                    continue;
+                result.add(figure);
             }
-            current = current.next();
-            if (current == root)
-                break;
         }
+
         return result;
     }
 
     private void endTurn() {
         currentTeamIndex = currentTeamIndex == teams.length - 1 ? 0 : ++currentTeamIndex;
         state = GameState.WAITING_FOR_ROLL;
+        lastRoll = 0;
     }
 
     private int rollDice() {
         return new Random().nextInt(1, 7);
     }
-
-
-    // -------------------------------------------------------------------------
-    // Accessors
-    // -------------------------------------------------------------------------
 
     public Node root() {
         return root;

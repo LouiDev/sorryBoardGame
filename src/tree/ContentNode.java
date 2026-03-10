@@ -1,6 +1,9 @@
 package tree;
 
 import models.GameFigure;
+import models.Team;
+
+import java.util.List;
 
 public class ContentNode extends Node {
     private GameFigure content;
@@ -8,6 +11,20 @@ public class ContentNode extends Node {
     public ContentNode() {
         next = new EndNode();
         content = null;
+    }
+
+    @Override
+    public void collectAllGameFiguresFromTeam(Team team, Node rootNode, List<GameFigure> result) {
+        if (content != null) {
+            if (content.team() == team) {
+                result.add(content);
+            }
+        }
+
+        if (this == rootNode)
+            return;
+
+        next.collectAllGameFiguresFromTeam(team, rootNode, result);
     }
 
     @Override

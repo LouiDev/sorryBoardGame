@@ -150,3 +150,6 @@ Actual violation:  tree → models  (Node.java imports GameFigure)
 | 2026-03-10 | Create `memory.md` — initial analysis                                                         | agent   |
 | 2026-03-10 | Implement turn/figure-selection state machine, moveFigure, center UI, highlight ring, repaint | agent   |
 | 2026-03-10 | Fix off-by-one in `GarageNode.getAllRec()` — last node was never written to array, causing NPE on paint | agent   |
+| 2026-03-10 | Reset `lastRoll` to 0 in `endTurn()` and after placing home figure, so dice display clears between turns | agent   |
+| 2026-03-10 | Add `WAITING_FOR_SKIP_CONFIRM` state so skipped turns show the rolled number until player presses SPACE | agent   |
+| 2026-03-10 | Remove premature `lastRoll = 0` after home-figure placement so the rolled 6 stays visible | agent   |

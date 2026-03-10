@@ -24,6 +24,10 @@ public class Team {
         return Arrays.stream(home).allMatch(Objects::nonNull);
     }
 
+    public boolean isGameFigurInHome(GameFigure figure) {
+        return Arrays.stream(home).anyMatch(x -> figure == x);
+    }
+
     public int id() {
         return id;
     }

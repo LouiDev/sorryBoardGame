@@ -131,7 +131,7 @@ public class BoardPanel extends JPanel {
 
             iterations++;
 
-            // Abbruch wenn wir wieder am Startknoten angelangt sind (zirkuläre Liste)
+            // Abbruch, wenn wir wieder am Startknoten angelangt sind (zirkuläre Liste)
             if (current == board.root()) break;
         }
 
@@ -322,6 +322,8 @@ public class BoardPanel extends JPanel {
         String hint;
         if (state == GameState.WAITING_FOR_ROLL) {
             hint = "SPACE: Würfeln";
+        } else if (state == GameState.WAITING_FOR_SKIP_CONFIRM) {
+            hint = "Kein Zug möglich — SPACE: Weiter";
         } else {
             hint = "← → Wählen   SPACE: OK";
         }
