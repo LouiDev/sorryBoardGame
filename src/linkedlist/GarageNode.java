@@ -1,4 +1,4 @@
-package tree;
+package linkedlist;
 
 import exceptions.InvalidTreeStructureException;
 import models.Team;

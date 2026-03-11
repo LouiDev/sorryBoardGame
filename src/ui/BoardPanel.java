@@ -4,12 +4,12 @@ import models.Board;
 import models.GameFigure;
 import models.GameState;
 import models.Team;
-import tree.ContentNode;
-import tree.EndNode;
-import tree.GarageNode;
-import tree.GarageRootNode;
-import tree.Node;
-import tree.TeamRootNode;
+import linkedlist.ContentNode;
+import linkedlist.EndNode;
+import linkedlist.GarageNode;
+import linkedlist.GarageRootNode;
+import linkedlist.Node;
+import linkedlist.TeamRootNode;
 
 import javax.swing.JPanel;
 import javax.swing.Timer;

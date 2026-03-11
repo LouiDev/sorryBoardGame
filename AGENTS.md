@@ -25,7 +25,7 @@ src/
 ├── Main.java                  # Entry point — unnamed class, void main()
 ├── exceptions/                # Custom RuntimeException subclasses
 ├── models/                    # Domain objects (Board, Team, GameFigure, builders)
-├── tree/                      # Node types for the board's linked-list structure
+├── linkedlist/                      # Node types for the board's linked-list structure
 └── ui/                        # Reserved for future UI layer (currently empty)
 ```
 
@@ -40,7 +40,7 @@ There is no Gradle or Maven setup. Use `javac`/`java` directly.
 ```bash
 javac --release 25 --enable-preview -d out \
   src/exceptions/*.java \
-  src/tree/*.java \
+  src/linkedlist/*.java \
   src/models/*.java \
   src/Main.java
 ```
@@ -58,7 +58,7 @@ java --enable-preview -cp out Main
 
 ```bash
 javac --release 25 --enable-preview -d out \
-  src/exceptions/*.java src/tree/*.java src/models/*.java src/Main.java \
+  src/exceptions/*.java src/linkedlist/*.java src/models/*.java src/Main.java \
   && java --enable-preview -cp out Main
 ```
 
@@ -78,7 +78,7 @@ No test framework is configured yet. When tests are added, use **JUnit 5**.
 
 ```bash
 javac --release 25 --enable-preview -cp out:lib/* \
-  -d out src/test/tree/NodeTest.java
+  -d out src/test/linkedlist/NodeTest.java
 ```
 
 ### Run a single test class (example)
@@ -86,7 +86,7 @@ javac --release 25 --enable-preview -cp out:lib/* \
 ```bash
 java --enable-preview -cp out:lib/* \
   org.junit.platform.console.ConsoleLauncher \
-  --select-class=tree.NodeTest
+  --select-class=linkedlist.NodeTest
 ```
 
 ---
@@ -109,7 +109,7 @@ java --enable-preview -cp out:lib/* \
 | Classes / interfaces | `PascalCase`                       | `BoardBuilder`, `TeamNode`|
 | Methods / fields     | `camelCase`                        | `createBoard`, `rootNode` |
 | Constants            | `UPPER_SNAKE_CASE`                 | `MAX_TEAMS`               |
-| Packages             | all lowercase, no underscores      | `models`, `tree`          |
+| Packages             | all lowercase, no underscores      | `models`, `linkedlist`          |
 | Local variables      | `camelCase`, descriptive           | `prev`, `nextTeam`        |
 
 ### Accessor Style
@@ -222,12 +222,12 @@ Board board = new BoardBuilder()
 | Package      | Responsibility                                              |
 |--------------|-------------------------------------------------------------|
 | `models`     | Domain logic — `Board`, `Team`, `GameFigure`, builders      |
-| `tree`       | Data structure — all `Node` subtypes                        |
+| `linkedlist`       | Data structure — all `Node` subtypes                        |
 | `exceptions` | Custom unchecked exceptions                                 |
 | `ui`         | Future presentation layer — keep UI concerns out of models  |
 
-Dependencies must only flow **inward**: `ui` → `models` → `tree`/`exceptions`.
-The `tree` and `exceptions` packages must not import from `models` or `ui`.
+Dependencies must only flow **inward**: `ui` → `models` → `linkedlist`/`exceptions`.
+The `linkedlist` and `exceptions` packages must not import from `models` or `ui`.
 
 ---
 

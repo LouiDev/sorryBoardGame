@@ -1,6 +1,6 @@
 package models;
 
-import tree.TeamRootNode;
+import linkedlist.TeamRootNode;
 
 import java.awt.*;
 import java.util.Arrays;

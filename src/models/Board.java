@@ -1,10 +1,10 @@
 package models;
 
-import tree.ContentNode;
-import tree.EndNode;
-import tree.GarageRootNode;
-import tree.Node;
-import tree.TeamRootNode;
+import linkedlist.ContentNode;
+import linkedlist.EndNode;
+import linkedlist.GarageRootNode;
+import linkedlist.Node;
+import linkedlist.TeamRootNode;
 
 import java.util.ArrayList;
 import java.util.List;

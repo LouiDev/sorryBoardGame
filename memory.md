@@ -23,13 +23,13 @@ Living project-state document. Updated after every successful change to the code
 | Package      | Status         | Notes                                                        |
 |--------------|----------------|--------------------------------------------------------------|
 | `models`     | Functional     | `Board`, `Team`, `BoardBuilder`, `GameFigure`, `GameState` done |
-| `tree`       | Complete       | All node types implemented and stable                        |
+| `linkedlist`       | Complete       | All node types implemented and stable                        |
 | `exceptions` | Complete       | `InvalidTreeStructureException` (1 class)                    |
 | `ui`         | Functional     | Rendering + center info + highlight ring working; repaint connected |
 | `listener`   | Functional     | SPACE → würfeln/bestätigen; ← → Figurauswahl; repaint() nach jeder Taste |
 
-> **Architecture violation:** `tree` imports `models.GameFigure` (`Node.java:3`,
-> `ContentNode.java`). AGENTS.md states `tree` must not import from `models`.
+> **Architecture violation:** `linkedlist` imports `models.GameFigure` (`Node.java:3`,
+> `ContentNode.java`). AGENTS.md states `linkedlist` must not import from `models`.
 
 ### Board Data Structure
 
@@ -57,10 +57,10 @@ Node (abstract)
 ### Dependency Flow (intended vs. actual)
 
 ```
-Intended:   ui → models → tree/exceptions
+Intended:   ui → models → linkedlist/exceptions
                  listener → models
 
-Actual violation:  tree → models  (Node.java imports GameFigure)
+Actual violation:  linkedlist → models  (Node.java imports GameFigure)
 ```
 
 ---
@@ -98,7 +98,7 @@ Actual violation:  tree → models  (Node.java imports GameFigure)
 ## Critical Bugs
 
 ### 1. AGENTS.md documentation error — `EndNode` uses `super(true)` not `super(false)`
-- **File:** `src/tree/EndNode.java`, `AGENTS.md:197`
+- **File:** `src/linkedlist/EndNode.java`, `AGENTS.md:197`
 - **Detail:** AGENTS.md documents `super(false)`, but `EndNode` actually calls
   `super(true)`. The `skipInit` parameter name implies `true` = skip, so
   `true` is semantically correct. The docs contain a typo.
@@ -122,11 +122,11 @@ Actual violation:  tree → models  (Node.java imports GameFigure)
 | Gap                                         | File / Location                      |
 |---------------------------------------------|--------------------------------------|
 | `Team` has two redundant rootNode accessors  | `src/models/Team.java` — both `rootNode()` and `teamRootNode()` return the same field |
-| `ContentNode` redundantly sets `next = new EndNode()` | `src/tree/ContentNode.java` — `super()` already does this |
+| `ContentNode` redundantly sets `next = new EndNode()` | `src/linkedlist/ContentNode.java` — `super()` already does this |
 | `Node.getNodeForGameFigure()` returns `null` by default | Does not delegate to `next`; breaks traversal on mixed-type lists |
 | AGENTS.md `ui/` description says "currently empty" | `ui/` now has 3 files; docs are stale |
 | AGENTS.md `listener/` package undocumented  | Package added in second commit, not in Directory Structure section |
-| Architecture violation: `tree` imports `models` | `Node.java` imports `GameFigure`; reverses intended dependency direction |
+| Architecture violation: `linkedlist` imports `models` | `Node.java` imports `GameFigure`; reverses intended dependency direction |
 
 ---
 
@@ -136,7 +136,7 @@ Actual violation:  tree → models  (Node.java imports GameFigure)
 2. **Implement finish-lane entry** — detect when a figure passes its own `GarageRootNode` and route into `GarageNode` chain
 3. **Implement send-home collision** — when landing on occupied square belonging to another team
 4. **Implement win condition** — all 4 figures of a team in garage = that team wins
-5. **Fix architecture violation** — remove `tree → models` import (move `GameFigure` or use generics)
+5. **Fix architecture violation** — remove `linkedlist → models` import (move `GameFigure` or use generics)
 6. **Fix AGENTS.md** — correct `super(false)` → `super(true)` typo; add `listener/` and actual `ui/` to directory structure
 7. **Clean up redundant `rootNode()` / `teamRootNode()` in `Team`** — remove one of the duplicate accessors
 
