@@ -22,11 +22,11 @@ Living project-state document. Updated after every successful change to the code
 
 | Package      | Status         | Notes                                                        |
 |--------------|----------------|--------------------------------------------------------------|
-| `models`     | Functional     | `Board`, `Team`, `BoardBuilder`, `GameFigure`, `GameState` done |
+| `models`     | Functional     | `Board`, `Team`, `BoardBuilder`, `GameFigure` done; `GameState` entfernt |
 | `linkedlist`       | Complete       | All node types implemented and stable                        |
 | `exceptions` | Complete       | `InvalidTreeStructureException` (1 class)                    |
-| `ui`         | Functional     | Rendering + center info + highlight ring working; repaint connected |
-| `listener`   | Functional     | SPACE → würfeln/bestätigen; ← → Figurauswahl; repaint() nach jeder Taste |
+| `ui`         | Functional     | Rendering + center info + highlight ring working; repaint via Board-Callback |
+| `listener`   | Functional     | `InputHandler` als EDT↔Spielloop-Brücke; `InputListener` delegiert an `dispatch()` |
 
 > **Architecture violation:** `linkedlist` imports `models.GameFigure` (`Node.java:3`,
 > `ContentNode.java`). AGENTS.md states `linkedlist` must not import from `models`.
@@ -73,14 +73,16 @@ Actual violation:  linkedlist → models  (Node.java imports GameFigure)
 | `BoardBuilder` fluent API                      | Done                   |
 | `Team` model (id, color, name, home figures)   | Done — `name` field + accessor added |
 | `GameFigure` model                             | Done — `team()` accessor added |
-| `GameState` enum                               | Done (new file)        |
+| `GameState` enum                               | Entfernt — ersetzt durch `currentPhase()` String in `Board` |
 | `Board.startGame()`                            | Done                   |
 | `Board.rollDice()`                             | Done                   |
 | `Board.endTurn()`                              | Done                   |
-| `Board.update()` — state machine               | Done                   |
-| `Board.navigateSelection()`                    | Done                   |
+| `Board.update()` — state machine               | Entfernt — ersetzt durch `Board.gameLoop()` mit CompletableFuture |
+| `Board.navigateSelection()`                    | Entfernt — Navigationslogik intern in `awaitSelection()` |
+| `Board.gameLoop()` — asynchroner Spielloop     | Done — läuft in dediziertem Daemon-Thread |
+| `InputHandler` — EDT↔Thread-Brücke            | Done — `awaitKeyPress()` / `dispatch()` |
 | `Board.moveFigure(GameFigure, int)`            | Done (main ring traversal) |
-| `Board.selectedFigure()` / `state()` / `lastRoll()` | Done              |
+| `Board.selectedFigure()` / `currentPhase()` / `lastRoll()` | Done              |
 | Swing window (`BoardFrame`)                    | Done                   |
 | Geometric board rendering (`BoardPanel`)       | Done                   |
 | Finish-lane (garage) rendering                 | Done                   |
@@ -88,7 +90,7 @@ Actual violation:  linkedlist → models  (Node.java imports GameFigure)
 | Figure rendering with team color on board      | Done                   |
 | Highlight-Ring für ausgewählte Figur           | Done                   |
 | Center info panel (minimalist: Teamname in Farbe + Würfelzahl + Hinweis) | Done — box removed, name in team color |
-| Pulsierender Highlight-Ring für ausgewählte Figur (Brett + Home)         | Done — Swing-Timer, Doppelring (Schatten + Weiß), animiert |
+| Pulsierender Highlight-Ring für ausgewählte Figur (Brett + Home)         | Done — statischer schwarzer Kreis (Animation + Timer entfernt) |
 | Repaint after `board.update()`                 | Done                   |
 | Keyboard input (SPACE + ←/→)                   | Done                   |
 | `createBoard()` duplicate TeamRootNode fix     | Done                   |
@@ -156,3 +158,4 @@ Actual violation:  linkedlist → models  (Node.java imports GameFigure)
 | 2026-03-10 | Remove premature `lastRoll = 0` after home-figure placement so the rolled 6 stays visible | agent   |
 | 2026-03-10 | Minimalist center info: remove box, add readable team color name (Team Rot/Gelb/Blau/Grün) in team color; add `name` field to `Team` and `BoardBuilder` | agent   |
 | 2026-03-10 | Animated pulsing highlight ring: Swing-Timer at 60fps, double-ring (dark shadow + white), now also covers home figures in `drawAllHomes` | agent   |
+| 2026-03-20 | Fix Deadlock in gameLoop: thenAccept/join()-Kette durch blockierendes future.get() im Spielloop-Thread ersetzt | agent   |

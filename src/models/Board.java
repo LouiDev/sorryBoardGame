@@ -1,98 +1,119 @@
 package models;
 
-import linkedlist.ContentNode;
-import linkedlist.EndNode;
-import linkedlist.GarageRootNode;
-import linkedlist.Node;
-import linkedlist.TeamRootNode;
+import linkedlist.*;
+import listener.InputHandler;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import javax.swing.SwingUtilities;
+import java.awt.event.KeyEvent;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 public class Board {
     private final Node root;
     private final Team[] teams;
+    private final InputHandler inputHandler;
 
     private int currentTeamIndex;
-    private GameState state;
     private int lastRoll;
 
     private List<GameFigure> selectableFigures;
     private int selectionIndex;
 
-    public Board(Team[] teams) {
+    private volatile String currentPhase;
+    private Runnable repaintCallback;
+
+    public Board(Team[] teams, InputHandler inputHandler) {
         this.teams = teams;
+        this.inputHandler = inputHandler;
         root = createBoard();
         currentTeamIndex = -1;
-        state = GameState.WAITING_FOR_ROLL;
         lastRoll = 0;
         selectableFigures = new ArrayList<>();
         selectionIndex = 0;
+        currentPhase = "SPACE: Würfeln";
+    }
+
+    public void repaintCallback(Runnable callback) {
+        this.repaintCallback = callback;
     }
 
     public void startGame() {
         currentTeamIndex = 0;
     }
 
-
-    public void update() {
-        Team team = currentTeam();
-        if (team == null)
-            return;
-
-        if (state == GameState.WAITING_FOR_ROLL) {
-            handleRoll(team);
-        } else if (state == GameState.WAITING_FOR_FIGURE_SELECTION) {
-            confirmSelection();
-        } else if (state == GameState.WAITING_FOR_SKIP_CONFIRM) {
-            endTurn();
-        }
-    }
-
-    public void navigateSelection(int direction) {
-        if (state != GameState.WAITING_FOR_FIGURE_SELECTION)
-            return;
-
-        if (selectableFigures.isEmpty())
-            return;
-
-        selectionIndex = (selectionIndex + direction + selectableFigures.size()) % selectableFigures.size();
-    }
-
-
-    private void handleRoll(Team team) {
-        lastRoll = rollDice();
-
-        // Alle Figuren noch im Häuschen
-        if (team.isHomeFull()) {
-            if (lastRoll != 6) {
-                state = GameState.WAITING_FOR_SKIP_CONFIRM;
+    public void gameLoop() {
+        while (true) {
+            Team team = currentTeam();
+            if (team == null)
                 return;
-            }
 
-            // 6 gewürfelt: erste Figur auf das Startfeld setzen
-            placeFirstHomeOnStart(team);
-            return;
+            runTurn(team);
         }
+    }
 
-        // Wählbare Figuren ermitteln
-        boolean includeHome = lastRoll == 6 && team.teamRootNode().content() == null;
+    private void runTurn(Team team) {
+        lastRoll = 0;
+        setPhase("SPACE: Würfeln");
+        awaitSpace();
 
-        List<GameFigure> onBoard = figuresOnBoard(team, includeHome);
-        if (onBoard.isEmpty()) {
+        lastRoll = rollDice();
+        repaint();
+
+        selectableFigures = moveableFigures(team, lastRoll);
+        if (selectableFigures.isEmpty()) {
+            setPhase("Kein Zug möglich! SPACE: Weiter");
+            awaitSpace();
             endTurn();
             return;
         }
 
-        selectableFigures = onBoard;
         selectionIndex = 0;
-        state = GameState.WAITING_FOR_FIGURE_SELECTION;
+
+        setPhase("← → Wählen   SPACE: OK");
+        awaitSelection();
+    }
+
+    private void awaitSpace() {
+        awaitKey(KeyEvent.VK_SPACE);
+    }
+
+    private void awaitSelection() {
+        while (true) {
+            KeyEvent e = awaitAnyKey();
+            switch (e.getKeyCode()) {
+                case KeyEvent.VK_LEFT -> { navigate(-1); repaint(); }
+                case KeyEvent.VK_RIGHT -> { navigate(1); repaint(); }
+                case KeyEvent.VK_SPACE -> { confirmSelection(); repaint(); return; }
+            }
+        }
+    }
+
+    private void awaitKey(int keyCode) {
+        while (true) {
+            KeyEvent e = awaitAnyKey();
+            if (e.getKeyCode() == keyCode)
+                return;
+        }
+    }
+
+    private KeyEvent awaitAnyKey() {
+        try {
+            return inputHandler.awaitKeyPress().get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Spielloop-Thread wurde unterbrochen", e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException("Fehler beim Warten auf Tastendruck", e);
+        }
+    }
+
+    private void navigate(int direction) {
+        if (selectableFigures.isEmpty()) return;
+        selectionIndex = (selectionIndex + direction + selectableFigures.size()) % selectableFigures.size();
     }
 
     private void confirmSelection() {
         if (selectableFigures.isEmpty()) {
-            state = GameState.WAITING_FOR_ROLL;
             endTurn();
             return;
         }
@@ -100,88 +121,119 @@ public class Board {
         GameFigure figure = selectableFigures.get(selectionIndex);
         Team team = currentTeam();
 
-        if (team.isGameFigurInHome(figure)) {
-            // Neu aufs Feld setzen
-            team.teamRootNode().content(figure);
+        if (figure.isInHome()) {
+            moveFigureToBoard(team);
         } else {
             moveFigure(figure, lastRoll);
         }
 
         selectableFigures = new ArrayList<>();
         selectionIndex = 0;
-        state = GameState.WAITING_FOR_ROLL;
         endTurn();
     }
 
-    private void placeFirstHomeOnStart(Team team) {
+    private void moveFigureToBoard(Team team) {
         GameFigure[] home = team.home();
         for (int i = 0; i < home.length; i++) {
             if (home[i] != null) {
                 GameFigure figure = home[i];
                 home[i] = null;
-                team.teamRootNode().content(figure);
+                TeamRootNode trn = team.teamRootNode();
+                GameFigure toKick = trn.content();
+                if (toKick != null)
+                    toKick.moveToHome();
+                trn.content(figure);
                 return;
             }
         }
     }
 
-    private void moveFigure(GameFigure figure, int steps) {
-        Node currentNode = findNode(figure);
-        if (!(currentNode instanceof ContentNode cn))
-            return;
+    private boolean moveFigure(GameFigure figure, int steps) {
+        GarageNode gn = garageNode(figure);
+        Node currentNode = gn != null
+                ? gn
+                : root.next().findNode(figure, root);
 
-        cn.content(null);
-
-        Node target = currentNode;
-        for (int i = 0; i < steps; i++) {
-            Node next = target.next();
-            if (next instanceof EndNode) break;
-            target = next;
-        }
-
-        if (target instanceof ContentNode targetCn) {
-            targetCn.content(figure);
+        if (figure.isInHome()) {
+            return currentNode.move(figure, steps);
+        } else {
+            boolean result = currentNode.move(figure, steps);
+            if (result)
+                if (currentNode instanceof ContentNode cn)
+                    cn.content(null);
+            return result;
         }
     }
 
-    private Node findNode(GameFigure figure) {
-        Node current = root;
-        int maxNodes = teams.length * 11 + 10;
-        for (int i = 0; i < maxNodes; i++) {
-            if (current instanceof ContentNode cn && cn.content() == figure) {
-                return current;
-            }
-            current = current.next();
-            if (current == root)
-                break;
-        }
-        return new EndNode();
-    }
-
-    private List<GameFigure> figuresOnBoard(Team team, boolean includeHome) {
+    private List<GameFigure> figuresOnBoard(Team team) {
         List<GameFigure> result = new ArrayList<>();
         Node n = root.next();
         n.collectAllGameFiguresFromTeam(team, root, result);
+        return result;
+    }
 
+    private List<GameFigure> moveableFigures(Team team, int roll) {
+        // Auf dem Spielbrett (ohne Garage)
+        List<GameFigure> result = figuresOnBoard(team);
+        result = new ArrayList<>(result.stream().filter(x -> {
+            Node n = root.next().findNode(x, root);
+            return n.targetNode(team, roll) != null;
+        }).toList());
+
+        // Im Häuschen
+        TeamRootNode trn = team.teamRootNode();
+        boolean includeHome = roll == 6 && !trn.isOccupiedByFriendlyFigure();
         if (includeHome) {
-            for (GameFigure figure : team.home()) {
-                if (figure == null)
-                    continue;
-                result.add(figure);
-            }
+            result.addAll(Arrays.stream(team.home()).filter(Objects::nonNull).toList());
+        }
+
+        // In der Garage
+        GarageRootNode grn = root.findGarageRootNode(team);
+        GarageNode[] garage = grn.garage();
+
+        for (GarageNode n : garage) {
+            GameFigure garageContent = n.content();
+            if (garageContent == null)
+                continue;
+            if (n.targetNode(team, roll) != null)
+                result.add(garageContent);
         }
 
         return result;
     }
 
+    public GarageNode garageNode(GameFigure figure) {
+        GarageRootNode grn = root.findGarageRootNode(figure.team());
+        return Arrays.stream(grn.garage()).filter(x -> x.content() != null && x.content() == figure)
+                .findFirst()
+                .orElse(null);
+    }
+
     private void endTurn() {
-        currentTeamIndex = currentTeamIndex == teams.length - 1 ? 0 : ++currentTeamIndex;
-        state = GameState.WAITING_FOR_ROLL;
+        currentTeamIndex = lastRoll == 6
+                ? currentTeamIndex
+                : currentTeamIndex == teams.length - 1
+                    ? 0
+                    : ++currentTeamIndex;
         lastRoll = 0;
+        selectableFigures = new ArrayList<>();
+        selectionIndex = 0;
     }
 
     private int rollDice() {
         return new Random().nextInt(1, 7);
+    }
+
+    private void setPhase(String phase) {
+        currentPhase = phase;
+        repaint();
+    }
+
+    private void repaint() {
+        Runnable cb = repaintCallback;
+        if (cb != null) {
+            SwingUtilities.invokeLater(cb);
+        }
     }
 
     public Node root() {
@@ -192,8 +244,8 @@ public class Board {
         return teams;
     }
 
-    public GameState state() {
-        return state;
+    public String currentPhase() {
+        return currentPhase;
     }
 
     public int lastRoll() {
@@ -209,41 +261,30 @@ public class Board {
         return selectableFigures.get(selectionIndex);
     }
 
-
-    // -------------------------------------------------------------------------
-    // Brettaufbau
-    // -------------------------------------------------------------------------
-
     private Node createBoard() {
-        // Erster TeamRootNode für teams[0] — wird als root gespeichert
         TeamRootNode n = new TeamRootNode(teams[0]);
         teams[0].teamRootNode(n);
         Node prev = n;
 
         for (int i = 0; i < teams.length; i++) {
-            // 8 reguläre Felder
             for (int j = 0; j < 8; j++) {
                 ContentNode cn = new ContentNode();
                 prev.next(cn);
                 prev = cn;
             }
 
-            // Nächstes Team bestimmen (letztes Team zeigt zurück auf teams[0])
             Team nextTeam = i == teams.length - 1 ? teams[0] : teams[i + 1];
 
-            // GarageRootNode für das nächste Team (Zieleingang)
             GarageRootNode grn = new GarageRootNode(nextTeam);
             prev.next(grn);
             prev = grn;
 
             if (i < teams.length - 1) {
-                // Neuen TeamRootNode für das nächste Team anlegen
                 TeamRootNode trn = new TeamRootNode(nextTeam);
                 prev.next(trn);
                 prev = trn;
                 nextTeam.teamRootNode(trn);
             } else {
-                // Letzten GarageRootNode mit dem ursprünglichen root verknüpfen → zirkuläre Liste
                 prev.next(n);
             }
         }

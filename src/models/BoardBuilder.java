@@ -1,5 +1,7 @@
 package models;
 
+import listener.InputHandler;
+
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +18,7 @@ public class BoardBuilder {
         return this;
     }
 
-    public Board build() {
-        return new Board(teams.toArray(new Team[0]));
+    public Board build(InputHandler inputHandler) {
+        return new Board(teams.toArray(new Team[0]), inputHandler);
     }
 }

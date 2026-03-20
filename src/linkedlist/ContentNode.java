@@ -28,10 +28,36 @@ public class ContentNode extends Node {
     }
 
     @Override
-    public Node getNodeForGameFigure(GameFigure figure) {
+    public Node targetNode(Team team, int steps) {
+        if (steps > 0)
+            return next.targetNode(team, --steps);
+
+        return content == null
+            ? this
+            : content.team() == team
+                ? null
+                : this;
+    }
+
+    @Override
+    public Node findNode(GameFigure figure, Node searchRoot) {
         if (content == figure)
             return this;
-        return next.getNodeForGameFigure(figure);
+        if (searchRoot == this)
+            return null;
+        return next.findNode(figure, searchRoot);
+    }
+
+    @Override
+    public boolean move(GameFigure figure, int steps) {
+        if (steps > 0)
+            return next.move(figure, --steps);
+
+        if (content != null)
+            content.moveToHome();
+        content(figure);
+
+        return true;
     }
 
     public GameFigure content() {

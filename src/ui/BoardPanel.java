@@ -2,7 +2,6 @@ package ui;
 
 import models.Board;
 import models.GameFigure;
-import models.GameState;
 import models.Team;
 import linkedlist.ContentNode;
 import linkedlist.EndNode;
@@ -12,7 +11,6 @@ import linkedlist.Node;
 import linkedlist.TeamRootNode;
 
 import javax.swing.JPanel;
-import javax.swing.Timer;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -45,23 +43,10 @@ public class BoardPanel extends JPanel {
     private static final int FIELDS_PER_SIDE = 10;
 
     private final Board board;
-    private float highlightPhase = 0f;
 
     public BoardPanel(Board board) {
         this.board = board;
         setBackground(new Color(245, 240, 220));
-
-        // Timer für pulsierende Highlight-Animation (~60 fps)
-        Timer animTimer = new Timer(16, e -> {
-            if (board.state() == GameState.WAITING_FOR_FIGURE_SELECTION) {
-                highlightPhase += 0.05f;
-                if (highlightPhase > 2 * Math.PI) highlightPhase -= (float) (2 * Math.PI);
-            } else {
-                highlightPhase = 0f;
-            }
-            repaint();
-        });
-        animTimer.start();
     }
 
     @Override
@@ -233,6 +218,9 @@ public class BoardPanel extends JPanel {
             GameFigure garageFig = garageNodes[i].content();
             if (garageFig != null) {
                 Renderer.drawFigure(g2, gx, gy, FIGURE_RADIUS, garageFig.team().color());
+                if (garageFig == selected) {
+                    drawHighlight(g2, gx, gy);
+                }
             }
         }
     }
@@ -300,7 +288,7 @@ public class BoardPanel extends JPanel {
         Team team = board.currentTeam();
         if (team == null) return;
 
-        GameState state = board.state();
+        String phase = board.currentPhase();
         int roll = board.lastRoll();
         Color teamColor = team.color();
 
@@ -343,18 +331,10 @@ public class BoardPanel extends JPanel {
             drawCentered(g2, String.valueOf(roll), cx, cy + 18);
         }
 
-        // Zeile 3: Hinweis je nach State — grau, klein, zentriert
+        // Zeile 3: Hinweis je nach Phase — grau, klein, zentriert
         g2.setFont(new Font("SansSerif", Font.PLAIN, 11));
         g2.setColor(new Color(80, 80, 80));
-        String hint;
-        if (state == GameState.WAITING_FOR_ROLL) {
-            hint = "SPACE: Würfeln";
-        } else if (state == GameState.WAITING_FOR_SKIP_CONFIRM) {
-            hint = "Kein Zug möglich — SPACE: Weiter";
-        } else {
-            hint = "← → Wählen   SPACE: OK";
-        }
-        drawCentered(g2, hint, cx, cy + 60);
+        drawCentered(g2, phase, cx, cy + 60);
     }
 
     /** Zeichnet einen String horizontal zentriert um den Punkt (cx, baselineY). */
@@ -369,17 +349,8 @@ public class BoardPanel extends JPanel {
     // -------------------------------------------------------------------------
 
     private void drawHighlight(Graphics2D g2, int px, int py) {
-        float pulse = (float) Math.sin(highlightPhase);   // -1 .. 1
-        int r = FIGURE_RADIUS + HIGHLIGHT_EXTRA + (int) (pulse * 3);
-        int alpha = 180 + (int) (pulse * 60);             // 120 .. 240
-
-        // Schatten-Ring (dunkel, außen)
-        g2.setColor(new Color(0, 0, 0, Math.max(0, Math.min(255, alpha / 2))));
-        g2.setStroke(new BasicStroke(5f));
-        g2.drawOval(px - r - 2, py - r - 2, (r + 2) * 2, (r + 2) * 2);
-
-        // Weiß-Ring (innen)
-        g2.setColor(new Color(255, 255, 255, Math.max(0, Math.min(255, alpha))));
+        int r = FIGURE_RADIUS + HIGHLIGHT_EXTRA;
+        g2.setColor(Color.BLACK);
         g2.setStroke(new BasicStroke(2.5f));
         g2.drawOval(px - r, py - r, r * 2, r * 2);
     }

@@ -1,17 +1,16 @@
 package listener;
 
-import models.Board;
 import ui.BoardPanel;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
 public class InputListener implements KeyListener {
-    private final Board board;
+    private final InputHandler inputHandler;
     private final BoardPanel panel;
 
-    public InputListener(Board board, BoardPanel panel) {
-        this.board = board;
+    public InputListener(InputHandler inputHandler, BoardPanel panel) {
+        this.inputHandler = inputHandler;
         this.panel = panel;
     }
 
@@ -23,11 +22,7 @@ public class InputListener implements KeyListener {
 
     @Override
     public void keyReleased(KeyEvent e) {
-        switch (e.getKeyCode()) {
-            case KeyEvent.VK_SPACE -> board.update();
-            case KeyEvent.VK_LEFT  -> board.navigateSelection(-1);
-            case KeyEvent.VK_RIGHT -> board.navigateSelection(1);
-        }
+        inputHandler.dispatch(e);
         panel.repaint();
     }
 }

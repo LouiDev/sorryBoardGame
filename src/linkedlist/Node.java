@@ -12,10 +12,6 @@ public abstract class Node {
         next = new EndNode();
     }
 
-    public Node getNodeForGameFigure(GameFigure figure) {
-        return null;
-    }
-
     public void collectAllGameFiguresFromTeam(Team team, Node rootNode, List<GameFigure> result) { }
 
     protected Node(boolean skipInit) {
@@ -28,5 +24,21 @@ public abstract class Node {
 
     public void next(Node node) {
         next = node;
+    }
+
+    public boolean move(GameFigure figure, int steps) {
+        return false;
+    }
+
+    public Node targetNode(Team team, int steps) {
+        return null;
+    }
+
+    public Node findNode(GameFigure content, Node searchRoot) {
+        return null;
+    }
+
+    public GarageRootNode findGarageRootNode(Team team) {
+        return next.findGarageRootNode(team);
     }
 }
