@@ -163,3 +163,4 @@ Actual violation:  linkedlist → models  (Node.java imports GameFigure)
 | 2026-03-20 | Startwurf-Screen: StartRoll (Logik) + StartRollPanel (UI) hinzugefügt; BoardFrame auf Panel-Wechsel umgebaut; BoardBuilder.teams() ergänzt | agent   |
 | 2026-03-20 | Startwurf-Würfelmechanik durch Pfeil-Taste-Auswahl ersetzt: StartRoll auf ←/→/SPACE-Loop vereinfacht; StartRollPanel zeigt Auswahl-Karten ohne Würfellogik | agent   |
 | 2026-03-20 | Spielbeginn: eine Figur pro Team wird automatisch auf dem jeweiligen Startfeld platziert (Board.startGame) | agent   |
+| 2026-03-20 | Gewinnbedingung: checkWinner() wird am Anfang jedes Zugs geprüft; bei Sieg wird Phase auf "X hat gewonnen!" gesetzt und gameLoop beendet | agent   |

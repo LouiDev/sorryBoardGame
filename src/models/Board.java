@@ -48,6 +48,12 @@ public class Board {
 
     public void gameLoop() {
         while (true) {
+            Team winner = checkWinner();
+            if (winner != null) {
+                setPhase(winner.name() + " hat gewonnen!");
+                return;
+            }
+
             Team team = currentTeam();
             if (team == null)
                 return;
@@ -197,8 +203,7 @@ public class Board {
         }
 
         // In der Garage
-        GarageRootNode grn = root.findGarageRootNode(team);
-        GarageNode[] garage = grn.garage();
+        GarageNode[] garage = garage(team);
 
         for (GarageNode n : garage) {
             GameFigure garageContent = n.content();
@@ -209,6 +214,19 @@ public class Board {
         }
 
         return result;
+    }
+
+    private GarageNode[] garage(Team team) {
+        return root.findGarageRootNode(team).garage();
+    }
+
+    private Team checkWinner() {
+        for (Team team : teams) {
+            GarageNode[] garage = garage(team);
+            if (Arrays.stream(garage).allMatch(x -> x.content() != null))
+                return team;
+        }
+        return null;
     }
 
     public GarageNode garageNode(GameFigure figure) {

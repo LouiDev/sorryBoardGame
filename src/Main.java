@@ -12,7 +12,7 @@ void main() throws Exception {
 
     BoardBuilder builder = new BoardBuilder()
             .addTeam(Color.RED, "Rot")
-            //.addTeam(Color.YELLOW, "Gelb")
+            .addTeam(Color.MAGENTA, "Magenta")
             .addTeam(Color.BLUE, "Blau")
             .addTeam(Color.GREEN, "Grün");
 
