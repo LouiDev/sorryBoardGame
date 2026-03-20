@@ -1,15 +1,14 @@
 package listener;
 
-import ui.BoardPanel;
-
+import javax.swing.JPanel;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
 public class InputListener implements KeyListener {
     private final InputHandler inputHandler;
-    private final BoardPanel panel;
+    private final JPanel panel;
 
-    public InputListener(InputHandler inputHandler, BoardPanel panel) {
+    public InputListener(InputHandler inputHandler, JPanel panel) {
         this.inputHandler = inputHandler;
         this.panel = panel;
     }

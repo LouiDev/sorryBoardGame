@@ -37,8 +37,13 @@ public class Board {
         this.repaintCallback = callback;
     }
 
-    public void startGame() {
-        currentTeamIndex = 0;
+    public void startGame(int startTeamIndex) {
+        currentTeamIndex = startTeamIndex;
+        for (Team team : teams) {
+            GameFigure figure = team.home()[0];
+            team.home()[0] = null;
+            team.teamRootNode().content(figure);
+        }
     }
 
     public void gameLoop() {
@@ -148,20 +153,19 @@ public class Board {
         }
     }
 
-    private boolean moveFigure(GameFigure figure, int steps) {
+    private void moveFigure(GameFigure figure, int steps) {
         GarageNode gn = garageNode(figure);
         Node currentNode = gn != null
                 ? gn
                 : root.next().findNode(figure, root);
 
         if (figure.isInHome()) {
-            return currentNode.move(figure, steps);
+            currentNode.move(figure, steps);
         } else {
             boolean result = currentNode.move(figure, steps);
             if (result)
                 if (currentNode instanceof ContentNode cn)
                     cn.content(null);
-            return result;
         }
     }
 
@@ -173,6 +177,12 @@ public class Board {
     }
 
     private List<GameFigure> moveableFigures(Team team, int roll) {
+        TeamRootNode trn = team.teamRootNode();
+
+        // Bei Figuren im Häuschen & gewürfelter 6 & freiem Startfeld -> Figur muss aus Häuschen
+        if (roll == 6 && !team.isHomeEmpty() && !trn.isOccupiedByFriendlyFigure())
+            return Arrays.stream(team.home()).filter(Objects::nonNull).toList();
+
         // Auf dem Spielbrett (ohne Garage)
         List<GameFigure> result = figuresOnBoard(team);
         result = new ArrayList<>(result.stream().filter(x -> {
@@ -181,7 +191,6 @@ public class Board {
         }).toList());
 
         // Im Häuschen
-        TeamRootNode trn = team.teamRootNode();
         boolean includeHome = roll == 6 && !trn.isOccupiedByFriendlyFigure();
         if (includeHome) {
             result.addAll(Arrays.stream(team.home()).filter(Objects::nonNull).toList());

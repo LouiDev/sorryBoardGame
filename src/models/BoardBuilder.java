@@ -18,6 +18,10 @@ public class BoardBuilder {
         return this;
     }
 
+    public Team[] teams() {
+        return teams.toArray(new Team[0]);
+    }
+
     public Board build(InputHandler inputHandler) {
         return new Board(teams.toArray(new Team[0]), inputHandler);
     }

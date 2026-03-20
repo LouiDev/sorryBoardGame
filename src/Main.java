@@ -1,26 +1,35 @@
 import listener.InputHandler;
 import models.Board;
 import models.BoardBuilder;
+import models.StartTeamPicker;
 import ui.BoardFrame;
 
 import javax.swing.SwingUtilities;
 import java.awt.*;
 
-void main() {
+void main() throws Exception {
     InputHandler inputHandler = new InputHandler();
 
-    Board board = new BoardBuilder()
+    BoardBuilder builder = new BoardBuilder()
             .addTeam(Color.RED, "Rot")
-            .addTeam(Color.YELLOW, "Gelb")
+            //.addTeam(Color.YELLOW, "Gelb")
             .addTeam(Color.BLUE, "Blau")
-            .addTeam(Color.GREEN, "Grün")
-            .build(inputHandler);
+            .addTeam(Color.GREEN, "Grün");
 
-    board.startGame();
+    StartTeamPicker startRoll = new StartTeamPicker(builder.teams(), inputHandler);
 
-    SwingUtilities.invokeLater(() -> new BoardFrame(board, inputHandler).setVisible(true));
+    BoardFrame[] frameRef = new BoardFrame[1];
+    SwingUtilities.invokeAndWait(() -> {
+        frameRef[0] = new BoardFrame(startRoll, inputHandler);
+        frameRef[0].setVisible(true);
+    });
 
-    Thread gameThread = new Thread(board::gameLoop, "spielloop");
-    gameThread.setDaemon(true);
-    gameThread.start();
+    int startIndex = startRoll.run();
+
+    Board board = builder.build(inputHandler);
+    board.startGame(startIndex);
+
+    SwingUtilities.invokeLater(() -> frameRef[0].switchToBoard(board));
+
+    board.gameLoop();
 }

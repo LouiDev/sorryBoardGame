@@ -3,17 +3,21 @@ package ui;
 import listener.InputHandler;
 import listener.InputListener;
 import models.Board;
+import models.StartTeamPicker;
 
 import javax.swing.JFrame;
 import javax.swing.WindowConstants;
 
 public class BoardFrame extends JFrame {
 
-    public BoardFrame(Board board, InputHandler inputHandler) {
-        super("Mensch ärgere dich nicht");
+    private final InputHandler inputHandler;
 
-        BoardPanel panel = new BoardPanel(board);
-        board.repaintCallback(panel::repaint);
+    public BoardFrame(StartTeamPicker startRoll, InputHandler inputHandler) {
+        super("Mensch ärgere dich nicht");
+        this.inputHandler = inputHandler;
+
+        StartTeamPickerPanel panel = new StartTeamPickerPanel(startRoll);
+        startRoll.repaintCallback(panel::repaint);
         add(panel);
         addKeyListener(new InputListener(inputHandler, panel));
 
@@ -21,5 +25,15 @@ public class BoardFrame extends JFrame {
         pack();
         setLocationRelativeTo(null);
         setResizable(true);
+    }
+
+    public void switchToBoard(Board board) {
+        getContentPane().removeAll();
+        BoardPanel panel = new BoardPanel(board);
+        board.repaintCallback(panel::repaint);
+        add(panel);
+        addKeyListener(new InputListener(inputHandler, panel));
+        revalidate();
+        repaint();
     }
 }

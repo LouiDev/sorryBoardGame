@@ -22,8 +22,8 @@ public class Team {
         home = createHome();
     }
 
-    public boolean isHomeFull() {
-        return Arrays.stream(home).allMatch(Objects::nonNull);
+    public boolean isHomeEmpty() {
+        return Arrays.stream(home).allMatch(Objects::isNull);
     }
 
     public int id() {
