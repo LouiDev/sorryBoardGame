@@ -72,10 +72,37 @@ public class Board {
 
         selectableFigures = moveableFigures(team, lastRoll);
         if (selectableFigures.isEmpty()) {
-            setPhase("Kein Zug möglich! SPACE: Weiter");
-            awaitSpace();
-            endTurn();
-            return;
+            if (figuresOnBoard(team).isEmpty()) {
+                // Noch zwei Versuche um 6 zu Würfeln
+                for (int i = 2; i > 0; i--) {
+                    setPhase("Noch " + i + " Versuch(e)! SPACE: weiter");
+                    awaitSpace();
+
+                    lastRoll = 0;
+                    setPhase("SPACE: Würfeln");
+                    awaitSpace();
+
+                    lastRoll = rollDice();
+                    repaint();
+
+                    if (lastRoll == 6) {
+                        selectableFigures = moveableFigures(team, lastRoll);
+                        break;
+                    }
+                }
+
+                if (selectableFigures.isEmpty()) {
+                    setPhase("Kein Zug möglich! SPACE: Weiter");
+                    awaitSpace();
+                    endTurn();
+                    return;
+                }
+            } else {
+                setPhase("Kein Zug möglich! SPACE: Weiter");
+                awaitSpace();
+                endTurn();
+                return;
+            }
         }
 
         selectionIndex = 0;

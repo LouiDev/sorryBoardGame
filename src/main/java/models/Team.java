@@ -26,6 +26,10 @@ public class Team {
         return Arrays.stream(home).allMatch(Objects::isNull);
     }
 
+    public boolean isHomeFull() {
+        return Arrays.stream(home).allMatch(Objects::nonNull);
+    }
+
     public int id() {
         return id;
     }
